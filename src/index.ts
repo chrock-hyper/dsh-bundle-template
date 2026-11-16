@@ -12,7 +12,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 
-export const name = 'dsh-plugin-template'
+export const name = 'dsh-bundle-template'
 
 /** The tool registry must be up before `apply` runs. */
 export const inject = ['tools']

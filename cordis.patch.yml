@@ -6,8 +6,8 @@
 # activation. Override any of these values from a profile's own
 # `cordis.patch.yml` without touching this package.
 - insert:
-    - id: dsh-plugin-template
-      name: dsh-plugin-template
+    - id: dsh-bundle-template
+      name: dsh-bundle-template
       config:
         greeting: Hello
         maxRepeats: 3

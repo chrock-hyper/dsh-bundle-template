@@ -1,5 +1,5 @@
 {
-  "name": "dsh-plugin-template",
+  "name": "dsh-bundle-template",
   "version": "0.1.0",
   "type": "module",
   "description": "TypeScript + tsdown starter for DeepSeek Harness bundles: Host and Client halves, built artifacts, and contract checks.",

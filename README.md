@@ -1,4 +1,6 @@
-# dsh-plugin-template
+# dsh-bundle-template
+
+English | [中文](README.zh.md)
 
 TypeScript + [tsdown](https://tsdown.dev) starter for a [DeepSeek Harness](https://github.com/deepseek-ai) bundle. It ships a working **Host** half and a working **Client** half, both built to the exact artifact shapes DSH loads, plus a contract check that fails before a broken bundle reaches a profile.
 
@@ -69,7 +71,7 @@ dsh --profile dev --from-default-profile web --dump-config > /dev/null
 dsh plugin --profile dev add .
 
 # 3. Confirm the layer composed, without booting.
-dsh --profile dev --dump-config   # shows "# == dsh-plugin-template"
+dsh --profile dev --dump-config   # shows "# == dsh-bundle-template"
 
 # 4. Boot and open the tokenized URL the CLI prints.
 dsh --profile dev --port 0
@@ -91,7 +93,7 @@ A git install fetches **sources, not artifacts**: it runs this package's `prepar
 
 ```yaml
 allowBuilds:
-  dsh-plugin-template: true
+  dsh-bundle-template: true
 ```
 
 That allowance lets the package execute code on your machine at install time, so pin a commit when installing from git.
@@ -104,7 +106,7 @@ Replace all of these together; the contract check fails if the registration id d
 2. `build/tsdown.client.ts` reads the name from the manifest, so it needs no edit
 3. `cordis.patch.yml` → row `id` and `name`
 4. `locale/{en,zh}.json` → `meta.title`, `meta.description`
-5. `docs/DETAIL.md`, `README.md`
+5. `docs/DETAIL.md`, `README.md`, `README.zh.md`
 
 ## Gotchas this template already solves
 

@@ -1,4 +1,4 @@
-# Plugin template
+# Bundle template
 
 A starting point for a DeepSeek Harness bundle built with TypeScript and tsdown.
 

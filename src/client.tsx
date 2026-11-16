@@ -24,7 +24,7 @@ export const inject = ['slots']
 export function apply(ctx: ClientContext) {
   ctx.slots.inject(SLOT, () => {
     ctx.slots.register(
-      { name: SLOT, id: 'dsh-plugin-template.badge', order: 50 },
+      { name: SLOT, id: 'dsh-bundle-template.badge', order: 50 },
       Badge,
     )
   })
@@ -36,7 +36,7 @@ function Badge() {
 
   return (
     <span
-      title="Served by the dsh-plugin-template client bundle"
+      title="Served by the dsh-bundle-template client bundle"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
