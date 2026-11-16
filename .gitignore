@@ -1,0 +1,12 @@
+node_modules/
+
+# Build output: produced by `prepare`, never committed.
+lib/
+
+# Packed tarballs from `pnpm pack`.
+*.tgz
+
+# Local overlay patches and scratch state.
+dev.patch.yml
+.tmp/
+*.log

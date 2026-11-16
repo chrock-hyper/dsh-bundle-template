@@ -1,0 +1,13 @@
+# The layer this bundle contributes when a profile or the plugin manager
+# installs it. Rows reference the package by name so Node resolution finds the
+# installed code, not the source tree.
+#
+# `config` is validated by the plugin's exported Schemastery schema at
+# activation. Override any of these values from a profile's own
+# `cordis.patch.yml` without touching this package.
+- insert:
+    - id: dsh-plugin-template
+      name: dsh-plugin-template
+      config:
+        greeting: Hello
+        maxRepeats: 3

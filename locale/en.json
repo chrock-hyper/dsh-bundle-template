@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Plugin template",
+    "description": "Starting point for a TypeScript + tsdown bundle: a Host tool backed by configuration, and a Client badge in the composer dock.",
+    "detail": "docs/DETAIL.md"
+  }
+}

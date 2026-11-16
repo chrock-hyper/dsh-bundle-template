@@ -1,0 +1,67 @@
+{
+  "name": "dsh-plugin-template",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TypeScript + tsdown starter for DeepSeek Harness bundles: Host and Client halves, built artifacts, and contract checks.",
+  "keywords": ["dsh", "dsh-plugin", "deepseek-harness", "tsdown", "cordis"],
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "locale",
+    "docs",
+    "cordis.patch.yml",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-conversation"]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.0 <0.3.0",
+    "node": ">=24.9.0"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('lib', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsdown --config build/tsdown.host.ts && tsdown --config build/tsdown.client.ts",
+    "build:host": "tsdown --config build/tsdown.host.ts",
+    "build:client": "tsdown --config build/tsdown.client.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/check-artifacts.ts",
+    "pack:check": "node scripts/check-pack.ts",
+    "check": "npm run typecheck && npm run build && npm run test && npm run pack:check",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-tools": "^0.2.2-rc.3",
+    "@deepseek-ai/schemastery": "^3.19.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.3",
+    "@deepseek-ai/schemastery": "^3.19.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "^18.3.31",
+    "tsdown": "^0.23.7",
+    "typescript": "^5.9.3"
+  }
+}
