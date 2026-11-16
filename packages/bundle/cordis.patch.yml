@@ -1,0 +1,21 @@
+# One row per plugin package. The bundle package itself contributes no Host
+# code and declares no dsh.client: it is a pure composition layer.
+#
+# `name` is the installed package root, not a subpath and not a relative path.
+# A bare package root is the one specifier shape that all three DSH consumers
+# agree on: the Loader mounts it, client-modules attaches its own Client half,
+# and Plugin Manager reads its own locale/icon. A relative path would keep the
+# Client half but lose the row metadata; a subpath would keep the metadata but
+# lose the Client half.
+#
+# Every plugin package listed here is a `workspace:*` dependency of this
+# package, so a single install brings the rows' modules with it.
+- insert:
+    - id: echo
+      name: '@dsh-bundle-template/echo'
+      config:
+        greeting: Hello
+        maxRepeats: 3
+
+    - id: badge
+      name: '@dsh-bundle-template/badge'

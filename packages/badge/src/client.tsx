@@ -1,30 +1,32 @@
 /**
- * Client half of the bundle.
+ * Client half of the badge plugin.
  *
- * Contract (enforced by `scripts/check-artifacts.ts`):
- *   - the built file registers itself as `window.__ModuleLoader__.load({ id, factory })`
- *     with `id` equal to the package name;
- *   - `factory(require)` returns a plugin object with `inject` and `apply`;
- *   - the only runtime `require` calls are baseline modules the page already
- *     provides — in practice `react` and `react/jsx-runtime`. Never require a
- *     `@deepseek-ai/*` package from here: the page's module table answers a
- *     short list, and a request outside it fails the whole bundle at load.
+ * The built file registers itself as `window.__ModuleLoader__.load({ id, factory })`
+ * with `id` equal to this package's name. The factory returns a plugin object
+ * with `inject` and `apply`; `apply` registers the badge in the composer dock.
+ *
+ * The only runtime `require` targets are baseline modules the page already
+ * provides — in practice `react` and `react/jsx-runtime`. Never require a
+ * `@deepseek-ai/*` package from here: the page's module table answers a short
+ * list, and a request outside it fails the whole bundle at load. Peer and dev
+ * dependencies solve the Host half only; the browser has no profile resolver.
  *
  * Use named exports. The wrapper hands `module.exports` back to the loader, so
  * a default export would arrive as `{ default: ... }` and register nothing.
  */
 import { useEffect, useState } from 'react'
 
-import type { ClientContext } from './contract'
+import type { ClientContext } from './contract.ts'
 
 const SLOT = 'conversation.composer.dock'
+const SLOT_ID = 'dsh-bundle-template.badge'
 
 export const inject = ['slots']
 
 export function apply(ctx: ClientContext) {
   ctx.slots.inject(SLOT, () => {
     ctx.slots.register(
-      { name: SLOT, id: 'dsh-bundle-template.badge', order: 50 },
+      { name: SLOT, id: SLOT_ID, order: 50 },
       Badge,
     )
   })
@@ -36,7 +38,7 @@ function Badge() {
 
   return (
     <span
-      title="Served by the dsh-bundle-template client bundle"
+      title="Served by the @dsh-bundle-template/badge client bundle"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -52,7 +54,7 @@ function Badge() {
       }}
     >
       <span aria-hidden="true">◆</span>
-      template
+      badge
     </span>
   )
 }

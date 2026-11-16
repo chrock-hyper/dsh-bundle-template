@@ -1,24 +1,27 @@
 /**
- * Host half of the bundle.
+ * Host half of the echo plugin.
  *
  * A Host plugin is a Cordis plugin: it exports `apply(ctx, config)` plus an
  * optional `inject` (service names it needs) and an optional `Config`
- * (Schemastery schema that validates the row's `config` at activation).
+ * (Schemastery schema that validates the bundle row's `config` at activation).
  *
- * Everything registered through `ctx` is disposed automatically on unload, so
- * a row edit or a plugin restart leaves no residue.
+ * `@deepseek-ai/*` imports stay bare. The build externalizes them, and the
+ * package declares them in both `peerDependencies` and `devDependencies`: the
+ * profile resolver routes a linked importer's bare request to the installation
+ * copy when the importer declares it as a peer, while the dev copy only serves
+ * typecheck and local builds.
  */
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 
-export const name = 'dsh-bundle-template'
+export const name = '@dsh-bundle-template/echo'
 
 /** The tool registry must be up before `apply` runs. */
 export const inject = ['tools']
 
 export interface Config {
-  /** Word the example tool repeats. Change it from `cordis.yml`, not code. */
+  /** Word the example tool repeats. Change it from the bundle row, not code. */
   greeting: string
   /** Upper bound accepted by the example tool. */
   maxRepeats: number

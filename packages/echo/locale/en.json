@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Echo tool",
+    "description": "Repeats a configured greeting a bounded number of times."
+  }
+}

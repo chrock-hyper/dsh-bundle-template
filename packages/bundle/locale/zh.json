@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Bundle 模板",
+    "description": "把回声工具与徽标拆成两个独立插件包再组合在一起；每一行都可以单独启停。",
+    "detail": "docs/DETAIL.md"
+  }
+}

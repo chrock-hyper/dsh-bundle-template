@@ -2,118 +2,182 @@
 
 English | [中文](README.zh.md)
 
-TypeScript + [tsdown](https://tsdown.dev) starter for a [DeepSeek Harness](https://github.com/deepseek-ai) bundle. It ships a working **Host** half and a working **Client** half, both built to the exact artifact shapes DSH loads, plus a contract check that fails before a broken bundle reaches a profile.
+A pnpm monorepo starter for a [DeepSeek Harness](https://github.com/deepseek-ai) bundle: **one meta-package plus N real plugin packages**. Each plugin is installed, enabled, disabled, and versioned independently; a plugin that has a browser surface ships its own Client half and its own row-level display metadata. The meta-package only composes the rows and supplies default configuration.
 
-## Why this exists
+## Why a monorepo
 
-DSH's own client bundles are produced by a tsdown preset at `packages/client/tsdown.client.ts`, and that preset is **not published in any package** — the docs say so directly: a package outside the DSH repository has to reproduce that build itself. The Client half must be a script that calls `window.__ModuleLoader__.load({ id, factory })`, while the Host half is ordinary ESM. Getting both out of one TypeScript project, with `package.json` exports that match, is the whole job of this template.
+DSH identifies one Loader row through three different keys:
 
-## Requirements
+- **Loader**: `name` accepts anything — a bare package, a subpath, a relative path, a `file:` URL;
+- **client-modules**: accepts a package — it walks up from the row's module to the nearest `package.json`, and one package may have only one active Client source;
+- **Plugin Manager metadata**: accepts a bare package specifier only — a relative-path row has no row-level title or icon.
 
-- Node.js ≥ 24.9
-- pnpm (npm works too)
-- DSH `>=0.2.0 <0.3.0` (declared in `engines.dsh`)
+For a component to have an independent row, its own Client lifecycle, and its own row metadata all at once, the plugin must be a real package that Node can resolve. The meta-package inserts rows and supplies defaults; it never merges the plugins into one runtime object.
+
+Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Chinese) for the full derivation and the four shape trade-offs.
+
+## Layout
+
+```
+packages/
+  bundle/               # meta-package: cordis.patch.yml + bundle-level locale/icon/docs
+  echo/                 # plugin: Host tool template_echo
+  badge/                # plugin: no-op Host entry + Client badge
+build/config.ts         # shared tsdown config: Host ESM / Client loader wrapper
+scripts/build.ts        # enumerate packages/*, build each half
+scripts/check-pack.ts   # per-package npm pack file-list check
+templates/github-actions/ci.yml  # optional CI, disabled by default
+docs/ARCHITECTURE.md    # identity model and shape trade-offs
+```
 
 ## Quick start
 
 ```sh
 pnpm install
-pnpm check      # typecheck → build → contract checks → packed-file check
+pnpm check
 ```
 
-## Layout
+`pnpm check` runs `typecheck`, `build`, and `pack:check`. The contract check is not included yet; add it per package when you need it.
 
-```
-src/index.ts          Host half: apply(ctx, config), exports named `name`/`inject`/`Config`
-src/client.tsx        Client half: named `inject`/`apply`, returns a plugin object
-src/contract.ts       Local types for the browser contract (no runtime imports)
-build/tsdown.host.ts  ESM build → lib/index.js + lib/index.d.ts
-build/tsdown.client.ts CJS build + loader wrapper → lib/client.js
-cordis.patch.yml      The bundle layer: one inserted row with default config
-locale/{en,zh}.json   Display metadata read by Plugin Manager and Settings
-docs/DETAIL.md        The detail document shown on the bundle's plugin page
-scripts/check-*.ts    Contract and packaging gates
-```
+`pnpm install` runs the root `prepare`, so `lib/` exists after install.
 
-## Build contract
+## The two examples
 
-Two builds, two consumers, two formats. They write into the same `lib/`, so neither config sets `clean`; `pnpm build` wipes the directory once, first.
-
-| Half | Format | Consumer | Produces |
+| Package | What it does | Host half | Client half |
 |---|---|---|---|
-| Host | ESM, `platform: node` | Node imports it as an ordinary module | `lib/index.js`, `lib/index.d.ts` |
-| Client | CJS wrapped in `window.__ModuleLoader__.load(...)` | The page fetches it as a script and runs it | `lib/client.js` |
+| `@dsh-bundle-template/echo` | `template_echo` tool, configured by the row | yes | — |
+| `@dsh-bundle-template/badge` | a chip under the composer | no-op anchor | yes |
+| `@dsh-bundle-template/bundle` | composition: patch, locale, icon, docs | — | — |
 
-`package.json` exports both, so the loader needs no special paths:
+`echo` shows a Host-only plugin; `badge` shows a Host anchor plus a Client half. Each plugin carries its own `locale/` and `icon.svg`, so every Plugin Manager row has its own title, description, and artwork.
 
-```json
-{
-  ".":        { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
-  "./client": { "types": "./lib/client.d.ts", "default": "./lib/client.js" }
-}
-```
+## Add a plugin
 
-### Rules the build enforces
+1. Copy `packages/echo` or `packages/badge` to `packages/<name>`.
+2. Rename the package, then update `src/`, `locale/`, and `icon.svg`.
+3. Add `"@your-scope/<name>": "workspace:*"` to `packages/bundle/package.json` dependencies.
+4. Add one row to `packages/bundle/cordis.patch.yml`; add `config` only when the plugin exports a `Config` schema.
+5. Run `pnpm install` (creates the workspace link) and `pnpm check` from the root.
 
-- **Named exports in the Client half.** The wrapper hands `module.exports` back to the loader. A default export arrives as `{ default: ... }` and registers nothing.
-- **Only baseline `require` calls.** The page seeds a short module table — in practice `react` and `react/jsx-runtime`. Never import a `@deepseek-ai/*` package into the Client half: `import type` is erased and safe, a runtime import is not. The contract check greps for it.
-- **No top-level side effects.** Running a client bundle only registers a factory; everything else happens when the module materialises.
-- **One package name.** The registered `id`, the `dsh.client` declaration, and `package.json` `name` must agree.
+N=1 and N=10 use the same path; the meta-package needs no code change for a new plugin.
+
+## The `@deepseek-ai/*` rule
+
+Every plugin package:
+
+- declares each imported `@deepseek-ai/*` package in both `peerDependencies` and `devDependencies`;
+- keeps those packages external at build time (`neverBundle` in `build/config.ts`);
+- uses `import type` only in the Client half; never a runtime import.
+
+All three are required:
+
+- `devDependencies` let local builds, type checking, and tests resolve the package;
+- `peerDependencies` let the profile resolver route a linked importer's bare request to the installation copy — `dsh-app-boot`'s resolver reads an ancestor `package.json`'s peers and routes a match to installation scope;
+- keeping the import external means a bare request still exists at runtime. If the bundler inlines `@deepseek-ai/*`, you get a second Cordis or Schemastery instance and the peer declaration cannot help.
+
+The Client half is outside this mechanism: the browser module table seeds only baseline modules such as `react`; a runtime `@deepseek-ai/*` import fails the whole bundle at load.
 
 ## Local development
 
 ```sh
-# 1. A web-shaped profile. `dsh plugin add` alone creates a base-backed profile,
-#    which has no UI for the Client half to land in — start from the web template.
+# 1. Create a web-capable dev profile (a plain plugin add creates a base
+#    profile with no UI surface for the Client half).
 dsh --profile dev --from-default-profile web --dump-config > /dev/null
 
-# 2. Link this checkout into it.
-dsh plugin --profile dev add .
+# 2. Install at the monorepo root so packages/bundle/node_modules has the
+#    sibling links.
+pnpm install
 
-# 3. Confirm the layer composed, without booting.
-dsh --profile dev --dump-config   # shows "# == dsh-bundle-template"
+# 3. Link the meta-package. Do not use file: (see below).
+dsh plugin --profile dev add ./packages/bundle
 
-# 4. Boot and open the tokenized URL the CLI prints.
+# 4. Confirm the composed rows.
+dsh --profile dev --dump-config   # expect echo and badge
+
+# 5. Start.
 dsh --profile dev --port 0
 ```
 
-Rebuild after source edits (`pnpm build`); a linked checkout is read in place. DSH resolves `@deepseek-ai/*` peers from the running installation, so the Host half shares the host's Cordis instance instead of a duplicate — pnpm prints a peer warning for the linked in package, which is expected here.
+**`file:` does not work.** `workspace:*` resolves only inside the workspace. Installing the meta-package through `file:` makes pnpm resolve its dependencies in the consumer context and fails with:
 
-`pnpm install` also runs `prepare`, so a plain install leaves you with built output (~1.7 s, no type checking — the CI job owns that).
+```
+ERR_PNPM_WORKSPACE_PKG_NOT_FOUND
+"@scope/echo@workspace:*" is in the dependencies but no package named "@scope/echo" is present in the workspace
+```
 
-## Install it elsewhere
+Use `link:` / `dsh plugin add`. In a packed or published install, `pnpm pack` rewrites `workspace:*` to real versions; that is when `file:` tarballs or a registry install applies.
+
+### What a link install does and does not prove
+
+A link install proves composition: the rows mount, the Client half loads, the row config applies.
+
+It does not prove that the plugins use the host's `@deepseek-ai/*` instances. When only the meta-package is linked, the plugin packages live outside the linked root; the profile resolver's linked-root check may not cover them, so their static imports fall back to Node resolution and the workspace's dev-dependency copies.
+
+To test instance sharing, either:
+
+1. make each plugin package a top-level `link:` in the disposable dev profile, so each becomes a linked root; or
+2. do a release-like install: `pnpm pack` every package and install the tarballs into a disposable profile (a local registry makes this easier).
+
+Do not conclude that instance sharing works just because the linked UI renders.
+
+## Build
+
+| Half | Format | Consumer | Artifact |
+|---|---|---|---|
+| Host | ESM, `platform: node` | Node imports it as a normal module | `packages/<name>/lib/index.js`, `index.d.ts` |
+| Client | CJS wrapped in `window.__ModuleLoader__.load(...)` | the page fetches and runs it as a script | `packages/<name>/lib/client.js` |
+
+- Each package owns its `lib/`; `scripts/build.ts` cleans it per package.
+- `build/config.ts` is the shared config; `scripts/build.ts` enumerates `packages/*`, skips the pure meta-package, and builds the Host and/or Client half from `src/index.ts` and `dsh.client`.
+- Host builds keep `@deepseek-ai/*` external; Client builds keep `react` and `react/jsx-runtime` external.
+- The Client loader id comes from the package name at build time; renaming a package does not require editing the banner.
+
+## Pack and publish
 
 ```sh
-dsh plugin --profile demo add ./                # local directory (links the checkout)
-dsh plugin --profile demo add ./pkg-0.1.0.tgz   # packed tarball
-dsh plugin --profile demo add github:owner/repo#<sha>  # straight from git
+pnpm --filter @dsh-bundle-template/echo pack
+pnpm --filter @dsh-bundle-template/badge pack
+pnpm --filter @dsh-bundle-template/bundle pack
 ```
 
-A git install fetches **sources, not artifacts**: it runs this package's `prepare` script, so pnpm ≥ 10 asks you to allow that build the first time. Copy the package key pnpm prints into the profile's `pnpm-workspace.yaml`:
+`pnpm pack` rewrites the bundle's `workspace:*` dependencies to real versions. Installing the meta-package then installs the plugin packages from those versions, so **publish every plugin package**, not just the meta-package.
 
-```yaml
-allowBuilds:
-  dsh-bundle-template: true
+- Publish plugins first, then the meta-package.
+- A single-tarball distribution could use `bundledDependencies`, but whether DSH's install path preserves bundled dependencies needs an experiment; this template does not assume it.
+- There is no publish workflow; releasing is a manual step.
+
+## Optional CI
+
+The template ships no `.github/workflows/`. To enable it:
+
+```sh
+mkdir -p .github/workflows
+cp templates/github-actions/ci.yml .github/workflows/ci.yml
 ```
 
-That allowance lets the package execute code on your machine at install time, so pin a commit when installing from git.
+The workflow runs `pnpm typecheck`, `pnpm build`, and `pnpm pack:check`, installing with `--ignore-scripts` so a build failure is not mistaken for an install failure.
 
-## Rename the template
+## Rename for your scope
 
-Replace all of these together; the contract check fails if the registration id drifts from `package.json`:
+`@dsh-bundle-template` is a placeholder. Update:
 
-1. `package.json` → `name`, `description`
-2. `build/tsdown.client.ts` reads the name from the manifest, so it needs no edit
-3. `cordis.patch.yml` → row `id` and `name`
-4. `locale/{en,zh}.json` → `meta.title`, `meta.description`
-5. `docs/DETAIL.md`, `README.md`, `README.zh.md`
+1. `name` in every `packages/*/package.json`;
+2. the `dependencies` keys in `packages/bundle/package.json`;
+3. every `name` in `packages/bundle/cordis.patch.yml`;
+4. the `name` constants and comments in each plugin's source;
+5. titles and package names in `locale/*.json`, `README.md`, and `docs/`.
 
-## Gotchas this template already solves
+Then run `pnpm install && pnpm check`. The Client loader id is read from `package.json` at build time.
 
-- **`--config build/x.ts` makes tsdown treat `build/` as the working directory.** Both configs pin `cwd` to the project root; without it, `src/index.ts` does not resolve.
-- **CJS output defaults to `.cjs` in a `"type": "module"` package.** The client config forces `.js` via `outExtensions`: the page fetches `client.js` by name and never imports it through Node, so the safety extension only breaks the expected path.
-- **The Host build must not bundle `@deepseek-ai/*`.** A second Cordis or Schemastery instance on the host side breaks shared identity. They stay external and are declared under both `peerDependencies` and `devDependencies`.
-- **A linked directory install hides `files` mistakes.** `pnpm pack:check` packs the tarball and asserts every needed entry is present and no `src/` leaks in.
+## Pitfalls this template already handles
+
+- **The meta-package must not declare `dsh.client`.** It inserts several rows, and one package may have only one active Client source.
+- **One UI-bearing component per package.** Do not put several panels under one package's `dsh.client`; their UI lifecycle becomes coupled and cannot be enabled per row.
+- **A plugin package must export `./locale/*.json`, `./icon`, and `./package.json`.** `readPluginMeta` reads row titles and icons through those exports; exporting only `.` and `./client` leaves the metadata unreadable.
+- **A relative-path row has a Client half but no row metadata; a subpath row has metadata but no Client half.** A bare package root is the only specifier where all three identities agree.
+- **The Client half must not runtime-import `@deepseek-ai/*`.** The page module table does not answer it; `import type` is erased and safe.
+- **A link install is not a production install.** Verify instance sharing separately.
+- **Do not hand-replace `workspace:*` with `file:`.** `pnpm pack` rewrites only `workspace:`, and a `file:` path would leak into the tarball.
 
 ## License
 

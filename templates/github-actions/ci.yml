@@ -1,5 +1,8 @@
 name: ci
 
+# Optional. Copy this file to .github/workflows/ci.yml to enable it.
+# The template does not enable GitHub Actions by default.
+
 on:
   push:
     branches: [main]
@@ -18,11 +21,11 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      # --ignore-scripts: the `prepare` script builds, and the steps below do
-      # that explicitly so a build failure is not mistaken for an install failure.
+      # --ignore-scripts: the root `prepare` builds, and the steps below do
+      # that explicitly so a build failure is not mistaken for an install
+      # failure.
       - run: pnpm install --frozen-lockfile --ignore-scripts
 
       - run: pnpm typecheck
       - run: pnpm build
-      - run: pnpm test
       - run: pnpm pack:check

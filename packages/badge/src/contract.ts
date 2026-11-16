@@ -11,7 +11,7 @@
 /** What `factory(require)` must return: a Cordis plugin object. */
 export interface ClientPlugin {
   /** Client service names this plugin needs before `apply` runs. */
-  inject?: string[];
+  inject?: string[]
   apply(ctx: ClientContext): void
 }
 

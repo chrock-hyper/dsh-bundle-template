@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Bundle template",
+    "description": "Composes an echo tool and a badge as independent plugin packages. Each row can be enabled on its own.",
+    "detail": "docs/DETAIL.md"
+  }
+}

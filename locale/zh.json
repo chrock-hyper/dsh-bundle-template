@@ -1,7 +1,0 @@
-{
-  "meta": {
-    "title": "Bundle 模板",
-    "description": "TypeScript + tsdown 插件包起点：Host 侧注册一个受配置控制的工具，Client 侧在输入框下方渲染一枚徽标。",
-    "detail": "docs/DETAIL.md"
-  }
-}
