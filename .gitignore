@@ -13,3 +13,39 @@ dev.patch.yml
 .pnpm-store/
 *.log
 .DS_Store
+
+# ---------------------------------------------------------------------------
+# Credentials and secrets: never committed, never published.
+# This repository is public. Anything listed here becomes world-readable the
+# moment it is pushed, and git history keeps it alive even after you delete it.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+# Templates carry no real values and are meant to be committed.
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+secrets/
+.secrets/
+.npmrc
+.npmrc.*
+.netrc
+
+# ---------------------------------------------------------------------------
+# Local notes and working drafts. The formal docs (top-level READMEs, docs/,
+# per-package docs) stay tracked on purpose -- only personal scratch is
+# excluded here.
+# ---------------------------------------------------------------------------
+notes/
+drafts/
+scratch/
+*.local.md
+*.local.json
+*.local.yml
+*.local.yaml
+*.draft.md
